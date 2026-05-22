@@ -16,12 +16,19 @@ export const Diary = ({ date, dayRecord, library }: DiaryProps) => {
   const {
     updateDayRecord,
     addFoodToMeal,
+    addFoodToGroup,
+    addGroupToMeal,
+    updateFoodWeight,
+    deleteItem,
+    deleteGroup,
+    toggleGroupExpanded,
     addLibraryItem,
   } = useAppStore();
 
   const [libraryModalOpen, setLibraryModalOpen] = useState(false);
   const [productFormOpen, setProductFormOpen] = useState(false);
   const [selectedMealId, setSelectedMealId] = useState<string | null>(null);
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   
 
   const handleAddFood = (mealId: string) => {
@@ -30,113 +37,52 @@ export const Diary = ({ date, dayRecord, library }: DiaryProps) => {
   };
 
   const handleAddGroup = (mealId: string) => {
+    console.log('handleAddGroup', mealId);
     const groupName = prompt('Введите название группы:');
     if (!groupName) return;
-
-    const updatedMeals = dayRecord.meals.map(meal => {
-      if (meal.id === mealId) {
-        const newGroup = {
-          id: generateId(),
-          type: 'group' as const,
-          name: groupName,
-          items: [],
-          isExpanded: true,
-        };
-        return { ...meal, items: [...meal.items, newGroup] };
-      }
-      return meal;
-    });
-
-    updateDayRecord(date, { meals: updatedMeals });
+    console.log('Calling addGroupToMeal', date, mealId, groupName);
+    addGroupToMeal(date, mealId, groupName);
   };
 
   const handleSelectLibraryItem = (item: LibraryItem) => {
-    if (selectedMealId) {
-      const weight = prompt('Введите вес порции в граммах:', '100');
-      const weightNum = Number.parseFloat(weight || '100');
-      if (!isNaN(weightNum) && weightNum > 0) {
-        addFoodToMeal(date, selectedMealId, item.id, weightNum);
-      }
-      setSelectedMealId(null);
-      setLibraryModalOpen(false);
+    console.log('handleSelectLibraryItem', { item, selectedGroupId, selectedMealId });
+    const weight = prompt('Введите вес порции в граммах:', '100');
+    const weightNum = Number.parseFloat(weight || '100');
+    if (isNaN(weightNum) || weightNum <= 0) {
+      return;
     }
+    if (selectedGroupId && selectedMealId) {
+      console.log('Calling addFoodToGroup', date, selectedMealId, selectedGroupId, item.id, weightNum);
+      addFoodToGroup(date, selectedMealId, selectedGroupId, item.id, weightNum);
+      setSelectedGroupId(null);
+      setSelectedMealId(null);
+    } else if (selectedMealId) {
+      console.log('Calling addFoodToMeal', date, selectedMealId, item.id, weightNum);
+      addFoodToMeal(date, selectedMealId, item.id, weightNum);
+      setSelectedMealId(null);
+    }
+    setLibraryModalOpen(false);
   };
 
   const handleUpdateWeight = (itemId: string, newWeight: number) => {
-    // Find and update weight in day record
-    const updatedMeals = dayRecord.meals.map(meal => {
-      const updateItems = (items: any[]): any[] => {
-        return items.map(item => {
-          if (item.type === 'food' && item.id === itemId) {
-            return { ...item, weight: newWeight };
-          }
-          if (item.type === 'group') {
-            return { ...item, items: updateItems(item.items) };
-          }
-          return item;
-        });
-      };
-      return { ...meal, items: updateItems(meal.items) };
-    });
-    updateDayRecord(date, { meals: updatedMeals });
+    updateFoodWeight(date, itemId, newWeight);
   };
 
   const handleDeleteItem = (itemId: string) => {
-    const updatedMeals = dayRecord.meals.map(meal => {
-      const filterItems = (items: any[]): any[] => {
-        return items.filter(item => {
-          if (item.type === 'food' && item.id === itemId) return false;
-          if (item.type === 'group') {
-            const filteredChildren = filterItems(item.items);
-            if (filteredChildren.length === 0) return false;
-            return { ...item, items: filteredChildren };
-          }
-          return true;
-        });
-      };
-      return { ...meal, items: filterItems(meal.items) };
-    });
-    updateDayRecord(date, { meals: updatedMeals });
+    deleteItem(date, itemId);
   };
 
   const handleDeleteGroup = (groupId: string) => {
-    const updatedMeals = dayRecord.meals.map(meal => {
-      const filterItems = (items: any[]): any[] => {
-        return items.filter(item => {
-          if (item.type === 'group' && item.id === groupId) return false;
-          if (item.type === 'group') {
-            const filteredChildren = filterItems(item.items);
-            if (filteredChildren.length === 0) return false;
-            return { ...item, items: filteredChildren };
-          }
-          return true;
-        });
-      };
-      return { ...meal, items: filterItems(meal.items) };
-    });
-    updateDayRecord(date, { meals: updatedMeals });
+    deleteGroup(date, groupId);
   };
 
   const handleToggleGroupExpand = (groupId: string) => {
-    const updatedMeals = dayRecord.meals.map(meal => {
-      const toggleItems = (items: any[]): any[] => {
-        return items.map(item => {
-          if (item.type === 'group' && item.id === groupId) {
-            return { ...item, isExpanded: !item.isExpanded };
-          }
-          if (item.type === 'group') {
-            return { ...item, items: toggleItems(item.items) };
-          }
-          return item;
-        });
-      };
-      return { ...meal, items: toggleItems(meal.items) };
-    });
-    updateDayRecord(date, { meals: updatedMeals });
+    toggleGroupExpanded(date, groupId);
   };
 
-  const handleAddFoodToGroup = (_groupId: string) => {
-    // TODO: implement adding food to specific group
+  const handleAddFoodToGroup = (groupId: string, mealId: string) => {
+    setSelectedGroupId(groupId);
+    setSelectedMealId(mealId);
     setLibraryModalOpen(true);
   };
 

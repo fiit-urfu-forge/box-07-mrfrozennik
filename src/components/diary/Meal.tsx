@@ -12,7 +12,7 @@ interface MealProps {
   onDeleteItem: (itemId: string) => void;
   onDeleteGroup: (groupId: string) => void;
   onToggleGroupExpand: (groupId: string) => void;
-  onAddFoodToGroup: (groupId: string) => void;
+  onAddFoodToGroup: (groupId: string, mealId: string) => void;
   onAddSubgroup: (groupId: string) => void;
   onDeleteMeal?: (mealId: string) => void;
 }
@@ -89,7 +89,7 @@ export const Meal = ({
                   onUpdateWeight={onUpdateWeight}
                   onDeleteItem={onDeleteItem}
                   onDeleteGroup={onDeleteGroup}
-                  onAddFoodToGroup={onAddFoodToGroup}
+                  onAddFoodToGroup={(groupId) => onAddFoodToGroup(groupId, meal.id)}
                   onAddSubgroup={onAddSubgroup}
                 />
               );
